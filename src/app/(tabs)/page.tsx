@@ -155,6 +155,11 @@ function HomeScreenInner() {
   // misiones view — opening one closes the other so the back button always
   // returns to the default Home layout.
   const [showLocales, setShowLocales] = useState(false);
+  // When set, the locales pestaña is in "single tienda" mode: only that
+  // locale is rendered and the map is recentered + zoomed in on it. This
+  // is what makes the daily-mission "Ver Ubicación" link different from
+  // the generic "Ver Locales" button.
+  const [focusedLocaleId, setFocusedLocaleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get("misiones") === "1") {
@@ -165,20 +170,36 @@ function HomeScreenInner() {
 
   const openMisiones = () => {
     setShowLocales(false);
+    setFocusedLocaleId(null);
     setShowMisiones(true);
   };
   const closeMisiones = () => setShowMisiones(false);
 
-  const openLocales = () => {
+  const openLocales = (focusId: string | null = null) => {
     setShowMisiones(false);
+    setFocusedLocaleId(focusId);
     setShowLocales(true);
   };
-  const closeLocales = () => setShowLocales(false);
+  const closeLocales = () => {
+    setShowLocales(false);
+    setFocusedLocaleId(null);
+  };
 
   // Geolocation only fires while the locales pestaña is open, so we never
   // ask for the prompt in the background just for visiting Inicio.
   const geo = useGeolocation({ enabled: showLocales, watch: showLocales });
-  const mapCenter = geo.position ?? FALLBACK_CENTER;
+
+  const focusedLocale = focusedLocaleId
+    ? (LOCALES.find((l) => l.id === focusedLocaleId) ?? null)
+    : null;
+  // In single-tienda mode the map should always frame the focused store,
+  // even if GPS gives us a wildly different position (e.g. user not in the
+  // barrio). In "all locales" mode we prefer GPS, falling back to the
+  // average of the three tiendas.
+  const mapCenter = focusedLocale
+    ? { lat: focusedLocale.lat, lng: focusedLocale.lng }
+    : (geo.position ?? FALLBACK_CENTER);
+  const visibleLocales = focusedLocale ? [focusedLocale] : LOCALES;
 
   const actions: ActionTileProps[] = [
     { icon: IoSwapHorizontalOutline, label: "Transferir" },
@@ -234,7 +255,7 @@ function HomeScreenInner() {
               icon={<IoArrowBack className="h-5 w-5 text-ink" />}
             />
             <span className="text-sm font-semibold text-text-secondary">
-              Locales cerca de ti
+              {focusedLocale ? "Ubicación de la tienda" : "Locales cerca de ti"}
             </span>
           </div>
 
@@ -242,7 +263,7 @@ function HomeScreenInner() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex flex-col">
                 <span className="text-title-sm text-primary">
-                  Tiendas participantes
+                  {focusedLocale ? focusedLocale.title : "Tiendas participantes"}
                 </span>
                 <span className="text-[12px] font-medium text-text-secondary">
                   {geo.status === "loading"
@@ -268,16 +289,16 @@ function HomeScreenInner() {
 
             <MapSection
               center={mapCenter}
-              locales={LOCALES}
+              locales={visibleLocales}
               userLocation={geo.position ?? FALLBACK_CENTER}
               userAvatarSrc="/assets/position.png"
               height={420}
-              zoom={17}
+              zoom={focusedLocale ? 18 : 17}
               onSelectLocal={() => {}}
             />
 
             <ul className="flex flex-col divide-y divide-line/70">
-              {LOCALES.map((local) => (
+              {visibleLocales.map((local) => (
                 <li
                   key={local.id}
                   className="flex items-center gap-3 py-2.5"
@@ -365,20 +386,20 @@ function HomeScreenInner() {
 
           <MissionsCard title="Desafíos Diarios">
             <MissionRow
-              iconSrc="/assets/missions/icon-hamburguesa.png"
-              description="50% de Cashback en PoliBurguers"
+              iconSrc="/assets/missions/icon-tienda.png"
+              description="20% de Cashback en Frutería Danny"
               progress={0}
               total={1}
               progressLabel="0/1"
               customLink={{
                 label: "Ver Ubicación",
-                onPress: openLocales,
+                onPress: () => openLocales("2"),
               }}
             />
           </MissionsCard>
 
           <div className="pt-2">
-            <Button label="Ver Locales" size="lg" onClick={openLocales} />
+            <Button label="Ver Locales" size="lg" onClick={() => openLocales()} />
           </div>
         </div>
       ) : (
