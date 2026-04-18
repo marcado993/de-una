@@ -1,26 +1,274 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/**
+ * YaPass design tokens (from Figma):
+ * https://www.figma.com/design/qbMDWLfaDoUexegIwqvUkc/Yapass
+ *
+ * Ported from YaPass/constants/design-system.ts. Tailwind v4 @theme
+ * exposes each CSS variable as a utility class (e.g. bg-primary,
+ * rounded-lg, text-ink).
+ */
+@theme {
+  --color-primary: #4b1d8c;
+  --color-primary-dark: #3a1370;
+  --color-primary-light: #7a4ec7;
+  --color-primary-soft: #efe7f7;
+  --color-primary-softer: #f8f4fb;
+
+  --color-teal: #1fc9b6;
+  --color-teal-soft: #d7f4f0;
+
+  --color-ink: #1c1c1c;
+  --color-text-primary: #1c1c1c;
+  --color-text-secondary: #6b6b6b;
+  --color-text-muted: #9a9aa0;
+
+  --color-divider: #ececef;
+  --color-line: #e6e6ea;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f6f6f8;
+  --color-background: #f1f1f3;
+
+  --color-level-pink: #f3e3e0;
+  --color-level-pink-dark: #e7d0cc;
+  --color-level-gray: #6e6a6b;
+
+  /* Metallic gray gradient for level chips (top → bottom) */
+  --color-chip-gray-top: #a39fa0;
+  --color-chip-gray-mid: #6e6a6b;
+  --color-chip-gray-bottom: #4d4a4b;
+
+  /* Sponsor / "Raspa y Gana" orange chip */
+  --color-sponsor-orange-light: #ffb347;
+  --color-sponsor-orange: #ff8c1f;
+  --color-sponsor-orange-dark: #e87100;
+
+  /* Chrome / silver metallic for "scratch" CTA button */
+  --color-chrome-top: #f4f4f4;
+  --color-chrome-mid: #c4c4c4;
+  --color-chrome-bottom: #8c8c8c;
+
+  --color-success: #1fc9b6;
+  --color-warning: #f4b740;
+  --color-danger: #e0543b;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/**
+ * Typography scale mirrored from `YaPass/constants/design-system.ts`.
+ * Each utility bundles font-size + line-height + weight + color so
+ * components can tag a piece of text with its semantic role instead
+ * of re-stringing Tailwind classes.
+ */
+@utility text-display-lg {
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+@utility text-title-lg {
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+@utility text-title-md {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+@utility text-title-sm {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+@utility text-body-lg {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+}
+@utility text-body {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+}
+@utility text-body-sm {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+@utility text-caption {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+@utility text-label-button {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/**
+ * Utility: hide scrollbars on horizontal carousels while keeping
+ * touch/wheel scroll behaviour intact.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/**
+ * MapLibre popup — Tailwind base resets the default white chrome on
+ * `.maplibregl-popup-content`, so we restyle it into a branded
+ * floating card.
+ */
+.yp-popup .maplibregl-popup-content {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  box-shadow: 0 10px 28px rgba(75, 29, 140, 0.18);
+  border: 1px solid var(--color-primary-soft);
+  min-width: 200px;
+}
+.yp-popup .maplibregl-popup-tip {
+  border-top-color: #ffffff;
+}
+.yp-popup .maplibregl-popup-close-button {
+  color: var(--color-ink);
+  padding: 0 6px;
+  font-size: 16px;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
+}
+.maplibregl-ctrl-group {
+  border-radius: var(--radius-sm) !important;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+}
+.maplibregl-ctrl-group button {
+  background: #ffffff !important;
+}
+
+/**
+ * YaPass map pin — circular chip with a soft purple gradient, white
+ * ring, store icon, and a little drop tail. `yp-pin--active` fires a
+ * gentle pulsing halo so the selected local stands out.
+ */
+.yp-pin {
+  transform: translateY(-4px);
+  transition: transform 160ms ease;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.yp-pin:hover {
+  transform: translateY(-6px) scale(1.05);
+}
+.yp-pin--active {
+  transform: translateY(-8px) scale(1.1);
+}
+.yp-pin__chip {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light) 0%,
+    var(--color-primary) 60%,
+    var(--color-primary-dark) 100%
+  );
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 6px 14px rgba(75, 29, 140, 0.45);
+}
+.yp-pin__tail {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--color-primary-dark);
+  border-right: 3px solid #ffffff;
+  border-bottom: 3px solid #ffffff;
+  border-radius: 2px;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(75, 29, 140, 0.35);
+}
+.yp-pin__pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  opacity: 0.25;
+  animation: yp-pulse 1.6s ease-out infinite;
+  z-index: 0;
+}
+@keyframes yp-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Bounce used when a ScratchCard prize is revealed. */
+@keyframes yp-prize-pop {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.6;
+  }
+  55% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
