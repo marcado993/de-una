@@ -31,7 +31,7 @@ import {
   MissionRow,
   MissionsCard,
   PopupModal,
-  RaspaYGanaModal,
+  RaspaYGanaPanel,
   ScanButton,
   ScreenHeader,
   WelcomeAdPopup,
@@ -44,6 +44,7 @@ import type {
 } from "@/components/yapass";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useOnceFlag } from "@/hooks/use-once-flag";
+import { cn } from "@/lib/cn";
 
 /**
  * Locales reales del barrio (coordenadas exactas suministradas por el equipo).
@@ -145,7 +146,6 @@ function HomeScreenInner() {
   const searchParams = useSearchParams();
   const [showWelcome, markWelcomeSeen] = useOnceFlag("yapass.welcome.seen");
   const [showChallenge, setShowChallenge] = useState(false);
-  const [showRaspa, setShowRaspa] = useState(false);
   const [activeDesafio, setActiveDesafio] = useState<DesafioId | null>(null);
 
   // Drives the in-place "Ver Misiones" expansion. Initialised from the URL
@@ -160,6 +160,10 @@ function HomeScreenInner() {
   // is what makes the daily-mission "Ver Ubicación" link different from
   // the generic "Ver Locales" button.
   const [focusedLocaleId, setFocusedLocaleId] = useState<string | null>(null);
+  // Drives the in-place "Raspa y Gana" pestaña (intro + scratch board).
+  // Like the other pestañas, it lives inside Inicio and is mutually
+  // exclusive with showMisiones / showLocales.
+  const [showRaspa, setShowRaspa] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("misiones") === "1") {
@@ -171,12 +175,14 @@ function HomeScreenInner() {
   const openMisiones = () => {
     setShowLocales(false);
     setFocusedLocaleId(null);
+    setShowRaspa(false);
     setShowMisiones(true);
   };
   const closeMisiones = () => setShowMisiones(false);
 
   const openLocales = (focusId: string | null = null) => {
     setShowMisiones(false);
+    setShowRaspa(false);
     setFocusedLocaleId(focusId);
     setShowLocales(true);
   };
@@ -184,6 +190,14 @@ function HomeScreenInner() {
     setShowLocales(false);
     setFocusedLocaleId(null);
   };
+
+  const openRaspa = () => {
+    setShowMisiones(false);
+    setShowLocales(false);
+    setFocusedLocaleId(null);
+    setShowRaspa(true);
+  };
+  const closeRaspa = () => setShowRaspa(false);
 
   // Geolocation only fires while the locales pestaña is open, so we never
   // ask for the prompt in the background just for visiting Inicio.
@@ -225,21 +239,38 @@ function HomeScreenInner() {
       name: "Nivel 5",
       sponsor: { name: "Netlife" },
       cta: "Raspa y Gana!",
-      onCtaClick: () => setShowRaspa(true),
+      onCtaClick: openRaspa,
     },
   ];
 
   return (
-    <div className="flex flex-col pt-[max(env(safe-area-inset-top),0.5rem)]">
-      <ScreenHeader
-        name="Samira"
-        initials="SA"
-        location={showMisiones || showLocales ? "Barrio San Juan" : undefined}
-        onBellPress={() => setShowChallenge(true)}
-        onHelpPress={() => {}}
-      />
+    <div
+      className={cn(
+        "flex flex-col",
+        // The Raspa pestaña owns its full viewport (techo flush with the
+        // top edge), so we skip the safe-area top padding for it.
+        showRaspa ? "" : "pt-[max(env(safe-area-inset-top),0.5rem)]",
+      )}
+    >
+      {showRaspa ? null : (
+        <ScreenHeader
+          name="Samira"
+          initials="SA"
+          location={
+            showMisiones || showLocales ? "Barrio San Juan" : undefined
+          }
+          onBellPress={() => setShowChallenge(true)}
+          onHelpPress={() => {}}
+        />
+      )}
 
-      {showLocales ? (
+      {showRaspa ? (
+        // ── Raspa y Gana (in-place pestaña) ────────────────────────────────
+        // Triggered from the "Raspa y Gana!" CTA on the Nivel 5 sponsored
+        // chip of the YaPass carousel. Internally toggles between the intro
+        // frame and the scratch board.
+        <RaspaYGanaPanel onBack={closeRaspa} onClaim={() => {}} />
+      ) : showLocales ? (
         // ── Locales en tu barrio (in-place pestaña) ────────────────────────
         // Triggered from "Ver Locales" / "Ver Ubicación". Replaces every
         // other Home tile with the live map + the user mascot marker.
@@ -442,14 +473,6 @@ function HomeScreenInner() {
           markWelcomeSeen();
           openMisiones();
         }}
-      />
-
-      <RaspaYGanaModal
-        visible={showRaspa}
-        onClose={() => setShowRaspa(false)}
-        sponsor={{ name: "Netlife" }}
-        prize={{ amount: "$1.50", label: "Cashback Netlife", emoji: "🎉" }}
-        onClaim={() => {}}
       />
 
       <DesafioModal

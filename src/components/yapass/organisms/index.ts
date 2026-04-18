@@ -24,8 +24,8 @@ export type { MapLocal, MapSectionProps } from "./MapSection";
 export { PopupModal } from "./PopupModal";
 export type { PopupModalProps, PopupModalSize } from "./PopupModal";
 
-export { RaspaYGanaModal } from "./RaspaYGanaModal";
-export type { RaspaPrize, RaspaYGanaModalProps } from "./RaspaYGanaModal";
+export { RaspaYGanaPanel } from "./RaspaYGanaPanel";
+export type { RaspaYGanaPanelProps } from "./RaspaYGanaPanel";
 
 export { WelcomeAdPopup } from "./WelcomeAdPopup";
 export type { WelcomeAdPopupProps } from "./WelcomeAdPopup";
