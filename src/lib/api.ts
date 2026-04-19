@@ -1,6 +1,17 @@
 import type { Campaign, Location } from "./api-types";
 
 /**
+ * Pseudonymous visitor identity returned by `GET /me`. The backend
+ * derives it deterministically from the caller's IP so we can greet
+ * the user by name without a real auth flow.
+ */
+export type Identity = {
+  id: string;
+  name: string;
+  initials: string;
+};
+
+/**
  * Base URL of the realtime backend. Resolved at build time via the
  * `NEXT_PUBLIC_API_URL` env var. Falls back to the deployed Fly.io
  * URL so `npm run dev` works out of the box; override to
@@ -34,6 +45,21 @@ export async function fetchNearbyCampaigns(
   if (!res.ok) throw new Error(`nearby_${res.status}`);
   const { campaigns } = (await res.json()) as { campaigns: Campaign[] };
   return campaigns;
+}
+
+/**
+ * Fetches the pseudonymous {@link Identity} for the current browser.
+ * Results are stable per IP across reloads, so it's safe to cache on
+ * the client for the session — see `use-me.ts` for the module cache
+ * that enforces exactly one request per page lifetime.
+ */
+export async function fetchMe(): Promise<Identity> {
+  const res = await fetch(`${API_BASE}/me`, {
+    cache: "no-store",
+    credentials: "omit",
+  });
+  if (!res.ok) throw new Error(`me_${res.status}`);
+  return (await res.json()) as Identity;
 }
 
 export function buildStreamUrl(

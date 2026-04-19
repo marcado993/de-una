@@ -285,8 +285,6 @@ function HomeScreenInner() {
     >
       {showRaspa ? null : (
         <ScreenHeader
-          name="Samira"
-          initials="SA"
           location={
             showMisiones || showLocales ? "Barrio San Juan" : undefined
           }

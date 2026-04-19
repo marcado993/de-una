@@ -3,9 +3,19 @@
 import { useEffect, useReducer, useRef } from "react";
 
 import type { Campaign, Location } from "@/lib/api-types";
-import { buildStreamUrl, fetchNearbyCampaigns } from "@/lib/api";
+import { buildStreamUrl } from "@/lib/api";
 
 const DISMISSED_KEY = "yapass:dismissed-campaigns";
+/**
+ * Client-side time-to-live for a delivered campaign. Anything older
+ * than this falls out of the visible list so the UI never shows a
+ * stale alert — the contract is "only currently-broadcasting promos
+ * reach the screen". 90 s is a compromise between giving the user
+ * enough time to read the modal and honoring the "solo los actuales"
+ * intent the product owner set.
+ */
+const CAMPAIGN_TTL_MS = 90_000;
+const PRUNE_INTERVAL_MS = 5_000;
 
 type State = {
   campaigns: Campaign[];
@@ -17,10 +27,10 @@ type State = {
 type Action =
   | { type: "connect" }
   | { type: "disconnect"; error?: string | null }
-  | { type: "seed"; campaigns: Campaign[] }
   | { type: "append"; campaign: Campaign }
   | { type: "dismiss"; id: string }
-  | { type: "hydrate-dismissed"; ids: string[] };
+  | { type: "hydrate-dismissed"; ids: string[] }
+  | { type: "prune"; nowMs: number; ttlMs: number };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -28,11 +38,6 @@ function reducer(state: State, action: Action): State {
       return { ...state, connected: true, error: null };
     case "disconnect":
       return { ...state, connected: false, error: action.error ?? null };
-    case "seed":
-      // Merge instead of replacing so the list survives reconnects
-      // (the SSE server will re-send `hello` but not historical
-      // campaigns, that's what `/nearby` is for).
-      return { ...state, campaigns: dedupe([...action.campaigns, ...state.campaigns]) };
     case "append":
       if (state.campaigns.some((c) => c.id === action.campaign.id)) return state;
       return { ...state, campaigns: [action.campaign, ...state.campaigns] };
@@ -43,20 +48,19 @@ function reducer(state: State, action: Action): State {
     }
     case "hydrate-dismissed":
       return { ...state, dismissedIds: new Set(action.ids) };
+    case "prune": {
+      const cutoff = action.nowMs - action.ttlMs;
+      const fresh = state.campaigns.filter((c) => {
+        const createdAt = new Date(c.createdAt).getTime();
+        if (!Number.isFinite(createdAt)) return false;
+        return createdAt >= cutoff;
+      });
+      if (fresh.length === state.campaigns.length) return state;
+      return { ...state, campaigns: fresh };
+    }
     default:
       return state;
   }
-}
-
-function dedupe(list: Campaign[]): Campaign[] {
-  const seen = new Set<string>();
-  const out: Campaign[] = [];
-  for (const c of list) {
-    if (seen.has(c.id)) continue;
-    seen.add(c.id);
-    out.push(c);
-  }
-  return out;
 }
 
 function loadDismissed(): string[] {
@@ -97,12 +101,16 @@ export type UseCampaignStreamResult = {
 
 /**
  * Opens a long-lived SSE connection to `deuna-api` and collects live
- * campaign broadcasts. Also hydrates once on mount via `/campaigns/nearby`
- * so an alert that was launched *before* the user opened the tab is
- * still surfaced.
+ * campaign broadcasts.
  *
- * Dismissed ids persist in `localStorage` so the modal doesn't keep
- * popping up after a page reload.
+ * Deliberately **does not** hydrate from `/campaigns/nearby`: the
+ * product rule is "only currently-broadcasting promos should reach
+ * the client". Anything older than {@link CAMPAIGN_TTL_MS} is
+ * periodically pruned so a delivered alert that lingered on screen
+ * never feels like a stale banner.
+ *
+ * Dismissed ids still persist in `localStorage` so a user who closed
+ * a modal doesn't see the same promo pop up again inside the TTL.
  */
 export function useCampaignStream({
   enabled,
@@ -119,16 +127,25 @@ export function useCampaignStream({
   const esRef = useRef<EventSource | null>(null);
   const locationKey = location ? `${location.lat},${location.lng}` : "none";
 
-  // Rehydrate dismissed ids from localStorage once on mount.
   useEffect(() => {
     const ids = loadDismissed();
     if (ids.length > 0) dispatch({ type: "hydrate-dismissed", ids });
   }, []);
 
-  // Persist dismissed ids whenever they change.
   useEffect(() => {
     saveDismissed(state.dismissedIds);
   }, [state.dismissedIds]);
+
+  // Periodically drop campaigns that aged past the TTL. The interval
+  // lives independently of the SSE connection because a stale alert
+  // should disappear even when the socket is down.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const id = window.setInterval(() => {
+      dispatch({ type: "prune", nowMs: Date.now(), ttlMs: CAMPAIGN_TTL_MS });
+    }, PRUNE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!enabled) return;
@@ -146,20 +163,6 @@ export function useCampaignStream({
 
     let cancelled = false;
 
-    // Hydrate synchronously-ish (one tick) so we don't miss anything
-    // that happened while the tab was closed.
-    void fetchNearbyCampaigns(current, radiusM)
-      .then((nearby) => {
-        if (!cancelled) dispatch({ type: "seed", campaigns: nearby });
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          const message =
-            err instanceof Error ? err.message : "fetch_nearby_failed";
-          dispatch({ type: "disconnect", error: message });
-        }
-      });
-
     const streamUrl = buildStreamUrl(current, radiusM);
     console.debug("[yapass:sse] opening", streamUrl);
     const es = new EventSource(streamUrl);
@@ -176,6 +179,15 @@ export function useCampaignStream({
       try {
         const data = JSON.parse((event as MessageEvent).data) as Campaign;
         console.debug("[yapass:sse] campaign", data.id, data.title);
+        // Extra defence: even if the backend ever replays an old event
+        // on reconnect, we filter anything stale before dispatching.
+        const createdAt = new Date(data.createdAt).getTime();
+        if (
+          Number.isFinite(createdAt) &&
+          Date.now() - createdAt > CAMPAIGN_TTL_MS
+        ) {
+          return;
+        }
         dispatch({ type: "append", campaign: data });
       } catch (err) {
         console.warn("[yapass:sse] bad frame", err);
@@ -194,7 +206,6 @@ export function useCampaignStream({
       es.close();
       esRef.current = null;
     };
-    // Stringified location key keeps the deps list primitive-only.
   }, [enabled, locationKey, radiusM]);
 
   const visible = state.campaigns.filter((c) => !state.dismissedIds.has(c.id));

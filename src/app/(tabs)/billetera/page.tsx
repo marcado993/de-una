@@ -3,7 +3,7 @@ import { BalanceCard, Card, ScreenHeader } from "@/components/yapass";
 export default function BilleteraScreen() {
   return (
     <div className="flex flex-col pt-[max(env(safe-area-inset-top),0.5rem)]">
-      <ScreenHeader name="Samira" initials="SA" />
+      <ScreenHeader />
       <div className="flex flex-col gap-4 px-4 pt-3 pb-8">
         <BalanceCard amount={0.02} spentLast30Days={2.25} />
         <Card variant="elevated" padding="lg">
