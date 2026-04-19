@@ -30,7 +30,7 @@ export function CampaignAlertModal({
 }: CampaignAlertModalProps) {
   if (!campaign) return null;
 
-  const discountLabel = `${campaign.discountPct}% OFF`;
+  const discountLabel = `Cashback ${campaign.discountPct}%`;
   const subtitle = campaign.business.barrio
     ? `${campaign.business.name} · ${campaign.business.barrio}`
     : campaign.business.name;
