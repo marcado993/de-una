@@ -228,17 +228,48 @@ function HomeScreenInner() {
     { icon: IoStorefrontOutline, label: "Tienda Deuna" },
   ];
 
+  // YaPass progression — refreshed to match the latest Figma:
+  //   1) Regalo  (Alpina yogurt)        — completed
+  //   2) $0.15   Cashback               — active
+  //   3) Regalo  (Alpina yogurt sabor)  — upcoming
+  //   4) $0.15   Cashback               — upcoming (locked)
+  //   5) Sponsored Alpina "Raspa y Gana!"
   const levels: Level[] = [
-    { id: "1", amount: "$0.20", label: "Cashback", name: "Nivel 1", variant: "completed" },
-    { id: "2", amount: "$0.50", label: "Cashback", name: "Nivel 2", variant: "active" },
-    { id: "3", amount: "$0.70", label: "Cashback", name: "Nivel 3" },
-    { id: "4", amount: "$1", label: "Cashback", name: "Nivel 4" },
+    {
+      id: "1",
+      kind: "reward",
+      imageSrc: "/assets/yapass/yogurt-1.png",
+      label: "Regalo",
+      name: "Nivel 1",
+      variant: "completed",
+    },
+    {
+      id: "2",
+      amount: "$0.15",
+      label: "Cashback",
+      name: "Nivel 2",
+      variant: "active",
+    },
+    {
+      id: "3",
+      kind: "reward",
+      imageSrc: "/assets/yapass/yogurt-2.png",
+      label: "Regalo",
+      name: "Nivel 3",
+    },
+    {
+      id: "4",
+      amount: "$0.15",
+      label: "Cashback",
+      name: "Nivel 4",
+    },
     {
       id: "5",
       kind: "sponsored",
       name: "Nivel 5",
-      sponsor: { name: "Netlife" },
+      sponsor: { name: "Alpina", logoSrc: "/assets/alpina/logo.png" },
       cta: "Raspa y Gana!",
+      theme: "alpina",
       onCtaClick: openRaspa,
     },
   ];

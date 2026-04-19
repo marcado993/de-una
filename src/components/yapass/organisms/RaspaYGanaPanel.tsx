@@ -128,8 +128,9 @@ export function RaspaYGanaPanel({ onBack, onClaim }: RaspaYGanaPanelProps) {
 function RaspaIntroContent({ onEmpezar }: { onEmpezar: () => void }) {
   return (
     <div className="flex flex-col gap-4">
-      {/* Hero — orange gradient with mascot + Netlife co-brand */}
-      <div className="relative h-[170px] w-full shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-gradient-to-b from-[#7a4aae] to-[#5a2a8e]">
+      {/* Hero — Alpina co-brand banner: blue mountain backdrop with the
+          DeUna mascot showing off a winning scratch ticket. */}
+      <div className="relative h-[170px] w-full shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-gradient-to-b from-[#5BA3F0] to-[#2F77C9]">
         <Image
           src="/assets/raspa/hero-banner.png"
           alt=""
@@ -333,13 +334,13 @@ function RaspaBoardContent({
         </div>
       </div>
 
-      {/* Netlife sponsor logo */}
+      {/* Alpina sponsor logo (blue mountain oval). */}
       <Image
-        src="/assets/raspa/netlife-logo.png"
-        alt="Netlife"
+        src="/assets/alpina/logo.png"
+        alt="Alpina"
         width={140}
-        height={36}
-        className="h-9 w-auto object-contain"
+        height={56}
+        className="h-12 w-auto object-contain"
       />
 
       <div className="w-full px-4">

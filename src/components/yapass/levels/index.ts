@@ -27,6 +27,8 @@ export type { ProgressDotProps } from "./atoms/ProgressDot";
 // Molecules
 export { LevelChip } from "./molecules/LevelChip";
 export type { LevelChipProps } from "./molecules/LevelChip";
+export { RewardLevelChip } from "./molecules/RewardLevelChip";
+export type { RewardLevelChipProps } from "./molecules/RewardLevelChip";
 export { SponsoredLevelChip } from "./molecules/SponsoredLevelChip";
 export type { SponsoredLevelChipProps } from "./molecules/SponsoredLevelChip";
 export { LevelItem } from "./molecules/LevelItem";
@@ -45,6 +47,8 @@ export type {
   Level,
   StandardLevel,
   StandardLevelVariant,
+  RewardLevel,
+  SponsorTheme,
   SponsoredLevel,
 } from "./types";
-export { isSponsoredLevel } from "./types";
+export { isRewardLevel, isSponsoredLevel } from "./types";

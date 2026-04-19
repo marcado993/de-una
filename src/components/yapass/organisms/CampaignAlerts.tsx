@@ -20,8 +20,9 @@ export type CampaignAlertsProps = {
   fallback?: Location;
   /** Broadcast radius filter used on both /nearby and /stream. */
   radiusM?: number;
-  /** Show a small live-connection pill in the corner. Handy during
-   *  demos and while debugging whether SSE is actually connected. */
+  /** Show a small live-connection pill in the corner. Off by default —
+   *  it's only useful while debugging the SSE channel; in production
+   *  it adds visual noise above the header. */
   showLiveIndicator?: boolean;
 };
 
@@ -36,7 +37,7 @@ export type CampaignAlertsProps = {
 export function CampaignAlerts({
   fallback = FALLBACK_LOCATION,
   radiusM = DEFAULT_RADIUS_M,
-  showLiveIndicator = true,
+  showLiveIndicator = false,
 }: CampaignAlertsProps = {}) {
   const effective = useEffectiveLocation(fallback, { enabled: true });
   const stream = useCampaignStream({
