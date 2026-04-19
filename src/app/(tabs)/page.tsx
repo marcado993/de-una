@@ -121,14 +121,15 @@ const DESAFIOS: Record<
   tres: {
     heroSrc: "/assets/missions/desafio-tres.png",
     category: "Cliente Frecuente",
-    title: "Compra Más de Dos Veces",
+    title: "Publicidad Gratis",
     description:
-      "Realiza compras separadas en el mismo comercio participante.",
-    validity: "Del 1 al 31 de mayo de 2026.",
+      "Mantente en el top #1 y tu negocio será recomendado a los usuarios.",
+    validity: "El 19 de Mayo de 2026.",
     steps: [
-      "Realiza una compra en tu tienda favorita participante.",
-      "Repite la compra dos veces más en la misma tienda.",
-      "Tu recompensa se emitirá automáticamente.",
+      "Realiza ventas durante un mes",
+      "Si varios usuarios visitan seguido tu tienda, entrarás en favoritos",
+      "Entre más usuarios logres que te tengan como tienda favorita tienes más oportunidades.",
+      "Si al finalizar el tiempo, quedas primero, ganas.",
     ],
   },
 };
