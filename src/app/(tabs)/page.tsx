@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
   IoArrowBack,
   IoArrowDownCircleOutline,
@@ -173,12 +173,83 @@ function HomeScreenInner() {
   // "Desafíos Diarios" below.
   const { claimed: claimedCampaigns } = useClaimedCampaigns();
 
+  // When the popup just navigated us here, this is the id of the
+  // campaign whose row should auto-scroll into view and play the
+  // "spawn" pop-in animation. Cleared a few seconds later so the
+  // glow doesn't stick around.
+  const [highlightedClaimId, setHighlightedClaimId] = useState<string | null>(
+    null,
+  );
+  const claimRowRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
   useEffect(() => {
     if (searchParams.get("misiones") === "1") {
       setShowMisiones(true);
+      const newId = searchParams.get("new");
+      if (newId) setHighlightedClaimId(newId);
       router.replace("/");
     }
   }, [searchParams, router]);
+
+  // Scroll the freshly-spawned mission into view AND play a one-shot
+  // pop-in via the Web Animations API. We can't rely on a CSS
+  // `animate-*` class here because the row almost always mounts a
+  // tick before `highlightedClaimId` is committed (addClaim notifies
+  // useSyncExternalStore first, the URL effect runs second), so the
+  // class would land on an already-mounted node and never trigger.
+  // `node.animate()` is imperative — it fires every time the effect
+  // runs, regardless of mount order.
+  useEffect(() => {
+    if (!highlightedClaimId || !showMisiones) return;
+    const node = claimRowRefs.current.get(highlightedClaimId);
+    if (!node) return;
+    let cancelled = false;
+    // rAF gives the layout one tick to settle so scrollIntoView lands
+    // at the right offset on the first paint (otherwise we sometimes
+    // land mid-scroll because the misiones panel just expanded).
+    const raf = requestAnimationFrame(() => {
+      if (cancelled) return;
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Kick off the pop-in slightly after the scroll begins so the
+      // movement and the bounce read as one motion, not two.
+      window.setTimeout(() => {
+        if (cancelled) return;
+        node.animate(
+          [
+            {
+              transform: "scale(0.88)",
+              opacity: 0,
+              boxShadow: "0 0 0 0 rgba(124, 58, 237, 0)",
+              offset: 0,
+            },
+            {
+              transform: "scale(1.06)",
+              opacity: 1,
+              boxShadow: "0 0 0 8px rgba(124, 58, 237, 0.22)",
+              offset: 0.55,
+            },
+            {
+              transform: "scale(1)",
+              opacity: 1,
+              boxShadow: "0 0 0 0 rgba(124, 58, 237, 0)",
+              offset: 1,
+            },
+          ],
+          {
+            duration: 900,
+            easing: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+            fill: "none",
+          },
+        );
+      }, 220);
+    });
+    const t = window.setTimeout(() => setHighlightedClaimId(null), 1600);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
+  }, [highlightedClaimId, showMisiones, claimedCampaigns]);
 
   const openMisiones = () => {
     setShowLocales(false);
@@ -454,25 +525,38 @@ function HomeScreenInner() {
 
           <MissionsCard title="Desafíos Diarios">
             {/* User-spawned dailies: each campaign the user accepted from
-                the live popup becomes its own row, newest on top. */}
+                the live popup becomes its own row, newest on top. The
+                row whose id matches `highlightedClaimId` (set when the
+                popup just navigated us here) gets a one-shot pop-in
+                animation + auto-scroll-into-view, driven imperatively
+                from the effect above via `node.animate()`. */}
             {claimedCampaigns.map((c) => {
               const matchedLocal = LOCALES.find(
                 (l) =>
                   l.title.toLowerCase() === c.businessName.toLowerCase(),
               );
               return (
-                <MissionRow
+                <div
                   key={c.id}
-                  iconSrc="/assets/missions/icon-tienda.png"
-                  description={`${c.discountPct}% de Cashback en ${c.businessName}`}
-                  progress={0}
-                  total={1}
-                  progressLabel="0/1"
-                  customLink={{
-                    label: "Ver Ubicación",
-                    onPress: () => openLocales(matchedLocal?.id ?? null),
+                  ref={(node) => {
+                    if (node) claimRowRefs.current.set(c.id, node);
+                    else claimRowRefs.current.delete(c.id);
                   }}
-                />
+                  className="origin-center rounded-md"
+                  style={{ scrollMarginBlock: 96 }}
+                >
+                  <MissionRow
+                    iconSrc="/assets/missions/icon-tienda.png"
+                    description={`${c.discountPct}% de Cashback en ${c.businessName}`}
+                    progress={0}
+                    total={1}
+                    progressLabel="0/1"
+                    customLink={{
+                      label: "Ver Ubicación",
+                      onPress: () => openLocales(matchedLocal?.id ?? null),
+                    }}
+                  />
+                </div>
               );
             })}
 

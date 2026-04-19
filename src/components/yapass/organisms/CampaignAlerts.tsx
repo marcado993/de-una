@@ -70,10 +70,11 @@ export function CampaignAlerts({
           //    as a brand-new "Desafío Diario" row.
           addClaim(campaign);
           // 2) Jump straight to the YAPASS 1 / YAPASS 2 frame so the
-          //    user sees the freshly-spawned mission. The query param
-          //    is consumed by `(tabs)/page.tsx`, which flips
-          //    showMisiones=true and then strips the param.
-          router.push("/?misiones=1");
+          //    user sees the freshly-spawned mission. The query
+          //    params are consumed by `(tabs)/page.tsx`, which flips
+          //    showMisiones=true, scrolls to / animates the matching
+          //    row, and then strips the params.
+          router.push(`/?misiones=1&new=${encodeURIComponent(campaign.id)}`);
         }}
       />
       {showLiveIndicator ? (

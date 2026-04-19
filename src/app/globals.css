@@ -288,3 +288,25 @@ body {
     opacity: 1;
   }
 }
+
+/* "Pop in" used when a brand-new daily mission row spawns from a
+   campaign the user just accepted in the popup — it briefly grows
+   past 100% and settles, with a soft primary-tinted glow that fades
+   so the eye snaps to the new card. */
+@keyframes yp-mission-spawn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+  55% {
+    transform: scale(1.04);
+    opacity: 1;
+    box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.18);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+}
